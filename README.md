@@ -1,4 +1,4 @@
-# ArrayAccumulate
+# Array.prototype.accumulate and Array.prototype.accumulateRight
 Backwards-compatible replacements of `Array.prototype.reduce` and `Array.prototype.reduceRight` that treat its second parameter like `every`, `filter`, `find`, `findIndex`, `forEach`, `map`, and `some`.
 
 # Short Story Long
