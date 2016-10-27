@@ -2,14 +2,14 @@
 Backwards-compatible replacements of `Array.prototype.reduce` and `Array.prototype.reduceRight` that treat its second parameter like `every`, `filter`, `find`, `findIndex`, `forEach`, `map`, and `some`.
 
 # Short Story Long
-`Array.prototype.reduce` and `Array.prototype.map` are unique functions in that they can return something other than what was in the array.  However, `reduce` makes a very annoying assumption--if the second parameter is not specified, the first call to your callback will start at index 1 with the acuumlated value already set to the first item in the array.  This behavior might be fine for inline functions, but not reusable code because there is no way to know:
- 1. whether processing started at 0 or 1 (or k-1 or k-2), 
- 2. for sure whether a second parameter was provided, or 
- 3. what the second parameter was once beyond the first iteration.  
+`Array.prototype.reduce` and `Array.prototype.map` are unique functions in that they can return something other than what was in the array.  However, `reduce` makes a very annoying assumption--if the second parameter is not specified, the first call to your callback will start at index 1 with the acuumlated value already set to the first item in the array.  This behavior might be fine for inline functions, but not reusable code because there is:
+ 1. no way to know whether processing started at 0 or 1 (or k-1 or k-2), 
+ 2. no way to know for sure whether a second parameter was provided, or 
+ 3. no way to know what the second parameter was once beyond the first iteration.  
 
 Because of this assumption, if `reduce` is called on an empty array without a second parameter, an exception is thrown.  On the other hand, if `reduce` is called on an empty array with a second parameter, the second parameter is immediately returned as the result without consulting the callback how to "reduce" an empty array.  So, `accumulate` is `reduce`, but:
  1. it returns `undefined` when used on an empty array without 
-a second parameter, 
+a second parameter (instead of throwing an exception), 
  2. iteration always starts on index 0 (or k-1), and 
  3. the second parameter is always available as `this`.
 
@@ -123,9 +123,9 @@ function begin_after_date_hydration_accumulator( result, each, n, every )
 	return( result );
 }
 ```
-However, there is no variation of this reducer that will work.  `this` is uselessly, always `window` (instance of `Window`) and the reducer will never know when `result` should be initialized to an empty array (this is what `Array.prototype.reduce` was trying to help with when it was designed this way), and even if the criterion date were expected to be in `result`, it would then need to become an object with metadata (for example, `var criterion = {"afterDate":new Date( "2016-10-25T14:00:00.000Z" ), "filtered":[]};`).  What a mess!  One might think the mess is the result of misuse of `Array` accumulator, `reduce`.  Actually, the mess is the result of inconsistent handling of the second "context" parameter passed to the accumulator.  The following works just fine.
+However, there is no variation of this reducer that will work.  `this` is uselessly, always `window` (instance of `Window`) and the reducer will never know when `result` should be initialized to an empty array (this is what `Array.prototype.reduce` was trying to help with when it was designed the way it is), and even if the criterion date were expected to be in `result`, it would then need to become an object with metadata (for example, `var criterion = {"afterDate":new Date( "2016-10-25T14:00:00.000Z" ), "filtered":[]};`).  What a mess!  One might think the mess is the result of misuse of the `Array` accumulator, `reduce`.  Actually, the mess is the result of inconsistent handling of the second "context" parameter passed to the accumulator.  The following works just fine.
 ```javascript
 var filtered = array
 	.accumulate( begin_after_date_hydration_accumulator, beginDatecriterion );
 ```
-Now the developer has the power of `reduce` with the convenient context parameter `filter` has always enjoyed.
+Now the developer has the power of `reduce` with the convenient context parameter `filter` (and six other `Array` functions) has always enjoyed.
