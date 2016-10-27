@@ -129,3 +129,116 @@ var filtered = array
 	.accumulate( begin_after_date_hydration_accumulator, beginDatecriterion );
 ```
 Now the developer has the power of `reduce` with the convenient context parameter `filter` (and six other `Array` functions) has always enjoyed.
+
+# One Last ~~Rant~~ Example
+Let's write a reusable function to find the index of an item in an array (this could be more complex than emulating `indexOf`).  Does the array contain the search criterion?
+```javascript
+var array = ["a", "b", "c", "d"];
+var criterion = "a";
+function containment_checker( each, n, every )
+{return( this.localeCompare( each ) == 0 );}
+array.some( containment_checker, criterion );
+```
+It does.  Now, let's use `Array.prototype.accumulate` to "reduce" the array down to the subscript matching the criterion. 
+```javascript
+function first_index_of_accumulator( result, each, n, every )
+{
+	if( this instanceof Window )
+	{throw( new ReferenceError( "A context parameter must be specified." ));}
+	else if( !(this instanceof String || typeof( this ) === 'string'))
+	{throw( new TypeError( "The context parameter must be a string or a String." ));}
+
+	result = result === this && -1 || result;
+	if( result == -1 && this.localeCompare( each ) == 0 )
+	{result = n;}
+	return( result );
+}
+array.accumulate( first_index_of_accumulator, criterion );
+array.accumulateRight( first_index_of_accumulator, criterion );
+```
+Ahh, that was easy for two reasons: 1) `accumulate` was used just like `some` and 2) the expected results were achieved.  'accumulateRight' works too in this case because the array does not contain duplicate elements.
+
+What if the developer forgets to pass the context/search parameter?
+> `Uncaught TypeError: The context parameter must be a string or a String.`
+
+What if the developer forgets to pass a string as the context/search parameter?
+> `Uncaught ReferenceError: A context parameter must be specified.`
+
+Okay, good.  It's reusable, succinct, and reasonably robust.
+
+Now, for the `Array.prototype.reduce` version.
+```javascript
+function first_index_of_reducer( criterion )
+{
+	if( !(criterion instanceof String || typeof( criterion ) === 'string'))
+	{throw( new TypeError( "The criterion parameter must be a string or a String." ));}
+	return( function( result, each, n, every )
+	{
+		if( window.isNaN( window.parseInt( result, 10 )))
+		{result = -1;}
+
+		if( result == -1 && criterion.localeCompare( each ) == 0 )
+		{result = n;}
+		return( result );
+	});
+}
+array.reduce( first_index_of_reducer( criterion ));
+```
+Wait a minute, the result was '-1'?  I just accommodated `reduce`'s peculiar use of the second parameter by writing a function factory so what did I do wrong?  Oh, I forgot to provide `reduce` a second parameter.  Let's see what can be done about that.
+```javascript
+function first_index_of_reducer_v2( criterion )
+{
+	if( !(criterion instanceof String || typeof( criterion ) === 'string'))
+	{throw( new TypeError( "The criterion parameter must be a string or a String." ));}
+	// We already have an extra closure, so use it to cache whether an initial value was provided.
+	var default_index_provided = false;
+	return( function( result, each, n, every )
+	{
+		if( !default_index_provided )
+		{
+			if( n == 0 )
+			{default_index_provided = true;}
+			// Now we will know!
+			else
+			{throw( new ReferenceError( "An initial index parameter must be specified." ));}
+		}
+		if( window.isNaN( window.parseInt( result, 10 )))
+		{result = -1;}
+
+		if( result == -1 && criterion.localeCompare( each ) == 0 )
+		{result = n;}
+		return( result );
+	});
+}
+array.reduce( first_index_of_reducer_v2( criterion ), -1 );
+```
+Okay, that works.  As a test, let's just check that `reduceRight` works.  What, an exception was thrown?  Oh, the first index will be 'length - 1' when `reduceRight` is used.
+```javascript
+function first_index_of_reducer_v3( criterion )
+{
+	if( !(criterion instanceof String || typeof( criterion ) === 'string'))
+	{throw( new TypeError( "The criterion parameter must be a string or a String." ));}
+	var default_index_provided = false;
+	return( function( result, each, n, every )
+	{
+		if( !default_index_provided )
+		{
+			if( n == 0 || n == every.length - 1 )
+			{default_index_provided = true;}
+			else
+			{throw( new ReferenceError( "An initial index parameter must be specified." ));}
+		}
+		if( window.isNaN( window.parseInt( result, 10 )))
+		{result = -1;}
+
+		if( result == -1 && criterion.localeCompare( each ) == 0 )
+		{result = n;}
+		return( result );
+	});
+}
+array.reduce( first_index_of_reducer_v3( criterion ), -1 );
+```
+Finally, after writing a function factory and remembering a couple extra gotchas, we have a solution that is
+ 1. inconsistent with all other reusable array functions I might write,
+ 2. difficult to comprehend, and 
+ 3. twice the amount of code!
