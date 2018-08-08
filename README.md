@@ -19,50 +19,50 @@ With these changes, `accumulate` and `accumulateRight` act just like `every`, `f
 `Array.prototype.reduce` and `Array.prototype.reduceRight` require if-statements to inspect array length or try-catch blocks to be 
 used in situations where the developer does not have prior assurance the array has at least one item.  That means, given the array and criterion:
 ```javascript
-var array = 
+let array = 
 [
 	{"BeginDate":"2016-10-25T14:00:00.000Z", "EndDate":"2016-10-25T17:00:00.000Z"},
 	{"BeginDate":"2016-10-25T15:00:00.000Z", "EndDate":"2016-10-25T18:00:00.000Z"},
 	{"BeginDate":"2016-10-25T13:00:00.000Z", "EndDate":"2016-10-25T16:00:00.000Z"},
 ];
-var beginDatecriterion = new Date( "2016-10-25T14:00:00.000Z" );
+let beginDatecriterion = new Date( "2016-10-25T14:00:00.000Z" );
 ```
 `Array.prototype.reduce` has to do something crazy like this...:
 ```javascript
-var reduceValueTernary = (array.length > 0 ? array : ['default, default']).reduce( function(...){...});
+let reduceValueTernary = (array.length > 0 ? array : ['default, default']).reduce( function(...){...});
 ```
-...or something even crazier like this:
+...or something even crazier like this (because calling `Array.prototype.reduce` or `Array.prototype.reduceRight` on empty array without an initial value throws a `TypeError` exception):
 ```javascript
-var reduceValueTryCatch = 'default, default';
+let reduceValueTryCatch = 'default, default';
 try{reduceValueTryCatch = array.reduce( function(...){...});}catch(){}
 ```
 However, `Array.prototype.accumulate` can provide a fallback default with simply:
 ```javascript
-var accumulateValue = array.accumulate( function(...){...}) || 'default, default';
+let accumulateValue = array.accumulate( function(...){...}) || 'default, default';
 ```
 
 # Examples of Reasonable Backward-Compatibility
 `Array.prototype.reduce` on a non-empty array with a context value, passes it as the first parameter to the lambda so does `Array.prototype.accumulate`.
 ```javascript
-array.reduce( function( result )
+array.reduce( function( result, each, n, every )
 {
 	if( result !== "default, default" )
 	{throw( new Error( "Context parameter did not get passed as the first parameter to the lambda." ));}
 	return( result );
 }, "default, default" );
-array.reduceRight( function( result )
+array.reduceRight( function( result, each, n, every )
 {
 	if( result !== "default, default" )
 	{throw( new Error( "Context parameter did not get passed as the first parameter to the lambda." ));}
 	return( result );
 }, "default, default" );
-array.accumulate( function( result )
+array.accumulate( function( result, each, n, every )
 {
 	if( result !== "default, default" )
 	{throw( new Error( "Context parameter did not get passed as the first parameter to the lambda." ));}
 	return( result );
 }, "default, default" );
-array.accumulateRight( function( result )
+array.accumulateRight( function( result, each, n, every )
 {
 	if( result !== "default, default" )
 	{throw( new Error( "Context parameter did not get passed as the first parameter to the lambda." ));}
@@ -95,13 +95,13 @@ function begin_after_date_filter( each, n, every )
 	{throw( new ReferenceError( "A context parameter must be specified." ));}
 	else if( !(this instanceof Date))
 	{throw( new TypeError( "The context parameter must be a Date." ));}
-	else if( window.isNaN( this.getTime()))
+	else if( isNaN( this.getTime()))
 	{throw( new RangeError( "The context parameter was not a valid Date." ));}
 
   return( each.BeginDate > this );
 }
 
-var filtered = array
+let filtered = array
 	.map( hydration_mapper )
 	.filter( begin_after_date_filter, beginDatecriterion );
 ```
@@ -113,30 +113,30 @@ function begin_after_date_hydration_accumulator( result, each, n, every )
 	{throw( new ReferenceError( "A context parameter must be specified." ));}
 	else if( !(this instanceof Date))
 	{throw( new TypeError( "The context parameter must be a Date." ));}
-	else if( window.isNaN( this.getTime()))
+	else if( isNaN( this.getTime()))
 	{throw( new RangeError( "The context parameter was not a valid Date." ));}
 
 	result = this === result && [] || result;
-	var hydrated = {"BeginDate":new Date( each.BeginDate ), "EndDate":new Date( each.EndDate )};
+	let hydrated = {"BeginDate":new Date( each.BeginDate ), "EndDate":new Date( each.EndDate )};
 	if( hydrated.BeginDate > this )
 	{result.push( hydrated );}
 	return( result );
 }
 ```
-However, there is no variation of this reducer that will work.  `this` is uselessly, always `window` (instance of `Window`) and the reducer will never know when `result` should be initialized to an empty array (this is what `Array.prototype.reduce` was trying to help with when it was designed the way it is), and even if the criterion date were expected to be in `result`, it would then need to become an object with metadata (for example, `var criterion = {"afterDate":new Date( "2016-10-25T14:00:00.000Z" ), "filtered":[]};`).  What a mess!  One might think the mess is the result of misuse of the `Array` accumulator, `reduce`.  Actually, the mess is the result of inconsistent handling of the second "context" parameter passed to the accumulator.  The following works just fine.
+However, there is no variation of this reducer that will work.  `this` is uselessly, always `window` (instance of `Window`) and the reducer will never know when `result` should be initialized to an empty array (this is what `Array.prototype.reduce` was trying to help with when it was designed the way it is), and even if the criterion date were expected to be in `result`, it would then need to become an object with metadata (for example, `let criterion = {"afterDate":new Date( "2016-10-25T14:00:00.000Z" ), "filtered":[]};`).  What a mess!  One might think the mess is the result of misuse of the `Array` accumulator, `reduce`.  Actually, the mess is the result of inconsistent handling of the second "context" parameter passed to the accumulator.  The following works just fine.
 ```javascript
-var filtered = array
+let filtered = array
 	.accumulate( begin_after_date_hydration_accumulator, beginDatecriterion );
 ```
-Now the developer has the power of `reduce` with the convenient context parameter `filter` (and six other `Array` functions) has always enjoyed.
+Now the developer has the power of `reduce` with the convenient context parameter that `filter` (and six other `Array` functions) has always enjoyed.
 
 # One Last ~~Rant~~ Example
-Let's write a reusable function to find the index of an item in an array (this could be more complex than emulating `indexOf`).  Does the array contain the search criterion?
+Let's write a reusable function to find the index of an item in an array (this could be more complex than emulating `indexOf`).  Does the array contain the search criterion? **[Note: This was written before `Array.prototype.findIndex` existed.]**
 ```javascript
-var array = ["a", "b", "c", "d"];
-var criterion = "a";
+let array = ["a", "b", "c", "d"];
+let criterion = "ç";
 function containment_checker( each, n, every )
-{return( this.localeCompare( each ) == 0 );}
+{return( this.localeCompare( each, [], {"usage":"search", "sensitivity":"base"}) == 0 );}
 array.some( containment_checker, criterion );
 ```
 It does.  Now, let's use `Array.prototype.accumulate` to "reduce" the array down to the subscript matching the criterion. 
@@ -174,7 +174,7 @@ function first_index_of_reducer( criterion )
 	{throw( new TypeError( "The criterion parameter must be a string or a String." ));}
 	return( function( result, each, n, every )
 	{
-		if( window.isNaN( window.parseInt( result, 10 )))
+		if( isNaN( parseInt( result, 10 )))
 		{result = -1;}
 
 		if( result == -1 && criterion.localeCompare( each ) == 0 )
@@ -191,7 +191,7 @@ function first_index_of_reducer_v2( criterion )
 	if( !(criterion instanceof String || typeof( criterion ) === 'string'))
 	{throw( new TypeError( "The criterion parameter must be a string or a String." ));}
 	// We already have an extra closure, so use it to cache whether an initial value was provided.
-	var default_index_provided = false;
+	let default_index_provided = false;
 	return( function( result, each, n, every )
 	{
 		if( !default_index_provided )
@@ -202,7 +202,7 @@ function first_index_of_reducer_v2( criterion )
 			else
 			{throw( new ReferenceError( "An initial index parameter must be specified." ));}
 		}
-		if( window.isNaN( window.parseInt( result, 10 )))
+		if( isNaN( parseInt( result, 10 )))
 		{result = -1;}
 
 		if( result == -1 && criterion.localeCompare( each ) == 0 )
@@ -218,7 +218,7 @@ function first_index_of_reducer_v3( criterion )
 {
 	if( !(criterion instanceof String || typeof( criterion ) === 'string'))
 	{throw( new TypeError( "The criterion parameter must be a string or a String." ));}
-	var default_index_provided = false;
+	let default_index_provided = false;
 	return( function( result, each, n, every )
 	{
 		if( !default_index_provided )
@@ -228,7 +228,7 @@ function first_index_of_reducer_v3( criterion )
 			else
 			{throw( new ReferenceError( "An initial index parameter must be specified." ));}
 		}
-		if( window.isNaN( window.parseInt( result, 10 )))
+		if( isNaN( parseInt( result, 10 )))
 		{result = -1;}
 
 		if( result == -1 && criterion.localeCompare( each ) == 0 )
