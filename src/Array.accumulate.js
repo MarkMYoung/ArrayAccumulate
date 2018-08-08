@@ -20,11 +20,11 @@ Array.prototype.accumulate = Array.prototype.accumulate
 	if( typeof( callback ) !== 'function' )
 	{throw( new TypeError( ''.concat( callback, ' is not a function' )));}
 
-	var thisArg = arguments.length >= 2 ? arguments[ 1 ] : void 0;
-	var value = thisArg, self = Object( this ), len = self.length >>> 0;
+	let thisArg = arguments.length >= 2 ? arguments[ 1 ] : void 0;
+	let value = thisArg, self = Object( this ), len = self.length >>> 0;
 	if( len > 0 )
 	{
-		for( var i = 0; i < len; ++i )
+		for( let i = 0; i < len; ++i )
 		{
 			if( i in self )
 			{value = callback.apply( thisArg, [value, self[ i ], i, self]);}
@@ -44,11 +44,11 @@ Array.prototype.accumulateRight = Array.prototype.accumulateRight
 	if( typeof( callback ) !== 'function' )
 	{throw( new TypeError( ''.concat( callback, ' is not a function' )));}
 
-	var thisArg = arguments.length >= 2 ? arguments[ 1 ] : void 0;
-	var value = thisArg, self = Object( this ), len = self.length >>> 0;
+	let thisArg = arguments.length >= 2 ? arguments[ 1 ] : void 0;
+	let value = thisArg, self = Object( this ), len = self.length >>> 0;
 	if( len > 0 )
 	{
-		for( var i = len - 1; i >= 0; --i )
+		for( let i = len - 1; i >= 0; --i )
 		{
 			if( i in self )
 			{value = callback.apply( thisArg, [value, self[ i ], i, self]);}
